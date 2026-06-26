@@ -1,0 +1,9 @@
+# Environment variables - never commit this
+.env
+
+# Go build output
+ticket-system
+
+# OS files
+.DS_Store
+Thumbs.db
