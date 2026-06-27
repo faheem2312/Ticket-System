@@ -10,17 +10,18 @@ A REST API ticket system built in Go with JWT authentication, ownership-based ac
 - **gorilla/mux** — routing
 - **golang-jwt/jwt** — JWT auth
 - **bcrypt** — password hashing
-- **In-memory store** (thread-safe, `sync.RWMutex`)
+- **In-memory store** (thread-safe via `sync.RWMutex`)
 
 ---
 
 ## Local Run (without Docker)
 
 ```bash
-git clone <your-repo-url>
-cd ticket-system
+git clone https://github.com/faheem2312/Ticket-System.git
+cd Ticket-System
 
-cp .env.example .env   # set JWT_SECRET
+copy .env.example .env   # Windows
+# cp .env.example .env   # Mac/Linux
 
 go mod tidy
 go run ./cmd/main.go
@@ -48,76 +49,79 @@ curl http://localhost:8080/health
 
 ---
 
+## Deployed URLs
+
+| | URL |
+|---|---|
+| **App** | https://ticket-system-k8ek.onrender.com |
+| **Health check** | https://ticket-system-k8ek.onrender.com/health |
+
+> Note: Render free tier spins down after inactivity. First request may take ~30 seconds to wake up.
+
+---
+
 ## API Reference
 
 ### Auth
 
-#### Register
-```
-POST /auth/register
-Content-Type: application/json
-
+#### `POST /auth/register`
+```json
 {"email": "user@example.com", "password": "secret123"}
 ```
-
-#### Login
+Response `201`:
+```json
+{"id": "...", "email": "user@example.com", "created_at": "..."}
 ```
-POST /auth/login
-Content-Type: application/json
 
+#### `POST /auth/login`
+```json
 {"email": "user@example.com", "password": "secret123"}
 ```
-Returns `{"token": "<jwt>"}`. Use this token in all protected requests.
+Response `200`:
+```json
+{"token": "<jwt>"}
+```
 
 ---
 
-### Tickets (all require `Authorization: Bearer <token>`)
+### Tickets
 
-#### Create Ticket
+All ticket endpoints require the header:
 ```
-POST /tickets
+Authorization: Bearer <token>
+```
+
+#### `POST /tickets` — Create ticket
+```json
 {"title": "Bug in login", "description": "Users can't log in"}
 ```
 
-#### List My Tickets
-```
-GET /tickets
-```
+#### `GET /tickets` — List my tickets
 
-#### Get Ticket by ID
-```
-GET /tickets/{id}
-```
+#### `GET /tickets/{id}` — Get ticket by ID
 
-#### Update Ticket Status
-```
-PATCH /tickets/{id}/status
+#### `PATCH /tickets/{id}/status` — Update ticket status
+```json
 {"status": "in_progress"}
 ```
 
-**Status flow:** `open` → `in_progress` → `closed`
+**Status flow:** `open` → `in_progress` → `closed`  
 Closed tickets cannot be reopened.
 
 ---
 
-## Deployment
+## Running Tests
 
-Deployed URL: **https://your-deployed-url.com**  
-Health check: **https://your-deployed-url.com/health**
-
-### Recommended free platforms
-
-| Platform | Notes |
-|----------|-------|
-| [Render](https://render.com) | Free tier, Docker support, easy setup |
-| [Railway](https://railway.app) | Free tier, auto-detects Go |
-| [Fly.io](https://fly.io) | Free tier, `flyctl deploy` |
+```bash
+go test ./...
+```
 
 ---
 
 ## Assumptions
 
-- Storage is in-memory; data resets on restart. Swap `store.New()` for a DB-backed store if persistence is needed.
+- Storage is in-memory; data resets on restart.
 - JWT tokens expire after 24 hours.
-- `JWT_SECRET` defaults to a placeholder if not set — always set it in production.
-- Ownership check: users can only view/update their own tickets. Other users' tickets return 404 (not 403) to avoid leaking existence.
+- `JWT_SECRET` defaults to a placeholder if not set — always override in production via environment variable.
+- Ownership: users can only view/update their own tickets. Other users' tickets return `404` (not `403`) to avoid leaking ticket existence.
+- Email is normalized (lowercased, trimmed) on register and login.

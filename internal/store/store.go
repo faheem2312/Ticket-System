@@ -2,6 +2,7 @@ package store
 
 import (
 	"errors"
+	"sort"
 	"sync"
 	"ticket-system/internal/models"
 )
@@ -87,6 +88,9 @@ func (s *Store) ListTicketsByUser(userID string) []*models.Ticket {
 			result = append(result, t)
 		}
 	}
+	sort.Slice(result, func(i, j int) bool {
+		return result[i].CreatedAt.Before(result[j].CreatedAt)
+	})
 	return result
 }
 
